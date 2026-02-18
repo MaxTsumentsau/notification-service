@@ -1,4 +1,43 @@
+app:
+  from: ${MAIL_USERNAME}
+  kafka:
+    topic: user-events
+    group-id: notification-service
+
+server:
+  port: 8081
+
 spring:
+  config:
+    import: optional:application-secret.yml
+  aop:
+    proxy-target-class: true
   application:
     name: notification-service
+  kafka:
+    bootstrap-servers: localhost:19092,localhost:29092
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.max2ba.*"
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.max2ba.notification_service.dto.SendEmailRequest
+    listener:
+      type: single
+      ack-mode: record
+  mail:
+    host: ${MAIL_HOST}
+    port: 465
+    protocol: smtps
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true
+      mail.smtp.starttls.enable: false
+
+
 
