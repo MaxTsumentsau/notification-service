@@ -4,10 +4,31 @@ app:
     topic: user-events
     group-id: notification-service
 
+resilience4j:
+  retry:
+    instances:
+      emailRetry:
+        maxAttempts: 5
+        waitDuration: 5m
+        retryExceptions:
+          - com.max2ba.notification_service.exception.EmailSendException
+        eventConsumerBufferSize: 100
+
 server:
   port: 8081
 
 spring:
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
   config:
     import: optional:application-secret.yml
   aop:
@@ -38,6 +59,12 @@ spring:
       mail.smtp.auth: true
       mail.smtp.ssl.enable: true
       mail.smtp.starttls.enable: false
-
-
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
+logging:
+  level:
+    liquibase: DEBUG
+    org.springframework.boot.autoconfigure.liquibase: DEBUG
+    org.springframework.jdbc: DEBUG
 

@@ -2,11 +2,15 @@ package com.max2ba.notification_service.service;
 
 import com.max2ba.notification_service.annotation.Loggable;
 import com.max2ba.notification_service.dto.SendEmailRequest;
+import com.max2ba.notification_service.dto.UserOperation;
+import com.max2ba.notification_service.entity.EmailDlq;
 import com.max2ba.notification_service.exception.EmailSendException;
+import com.max2ba.notification_service.repository.EmailDlqRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
@@ -25,9 +29,10 @@ public class EmailServiceImpl implements EmailService {
      @Value("${app.from}")
      private String from;
      private final JavaMailSender mailSender;
+     private final EmailDlqRepository emailDlqRepository;
 
-     @Override
      @Async("emailExecutor")
+     @Retry(name = "emailRetry", fallbackMethod = "fallback")
      public void sendEmail(SendEmailRequest request) {
           switch (request.userOperation()) {
                case CREATE -> send(request.email(), SUBJECT_CREATE, TEXT_CREATE);
@@ -44,8 +49,21 @@ public class EmailServiceImpl implements EmailService {
                message.setText(text);
                mailSender.send(message);
           } catch (MailException e) {
-               log.error("Mail exception: {}, {}", e.getMessage(), e.getStackTrace());
+               log.error("Mail exception: {}", e.getMessage());
                throw new EmailSendException("Ошибка отправки письма", e);
           }
+     }
+
+     public void fallback(SendEmailRequest request, Throwable e) {
+          log.error("Все попытки отправки письма исчерпаны для {}", request, e);
+
+          EmailDlq dlq = new EmailDlq();
+          dlq.setEmail(request.email());
+          dlq.setSubject(request.userOperation() == UserOperation.CREATE ? SUBJECT_CREATE : SUBJECT_DELETE);
+          dlq.setText(request.userOperation() == UserOperation.CREATE ? TEXT_CREATE : TEXT_DELETE);
+          dlq.setUserOperation(request.userOperation());
+          dlq.setAttempts(0);
+
+          emailDlqRepository.save(dlq);
      }
 }
