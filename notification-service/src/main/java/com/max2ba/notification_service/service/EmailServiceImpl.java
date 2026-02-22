@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -26,6 +27,7 @@ public class EmailServiceImpl implements EmailService {
      private final JavaMailSender mailSender;
 
      @Override
+     @Async("emailExecutor")
      public void sendEmail(SendEmailRequest request) {
           switch (request.userOperation()) {
                case CREATE -> send(request.email(), SUBJECT_CREATE, TEXT_CREATE);

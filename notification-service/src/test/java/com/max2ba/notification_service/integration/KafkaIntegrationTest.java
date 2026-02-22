@@ -15,9 +15,14 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ActiveProfiles("test")
@@ -47,6 +52,51 @@ class KafkaIntegrationTest {
 
           await().atMost(5, TimeUnit.SECONDS)
                   .untilAsserted(() -> verify(emailService).sendEmail(event));
+     }
+
+     @Test
+     void kafkaListenerProcessesMessagesInParallel() {
+          SendEmailRequest event1 = new SendEmailRequest(UserOperation.CREATE, "a@gmail.com");
+          SendEmailRequest event2 = new SendEmailRequest(UserOperation.CREATE, "b@gmail.com");
+          SendEmailRequest event3 = new SendEmailRequest(UserOperation.CREATE, "c@gmail.com");
+
+          long start = System.currentTimeMillis();
+
+          kafkaTemplate.send(TOPIC_NAME, event1);
+          kafkaTemplate.send(TOPIC_NAME, event2);
+          kafkaTemplate.send(TOPIC_NAME, event3);
+
+          await().atMost(10, TimeUnit.SECONDS)
+                  .untilAsserted(() -> verify(emailService, times(3)).sendEmail(any()));
+
+          long duration = System.currentTimeMillis() - start;
+
+          assertThat(duration).isLessThan(3000);
+     }
+
+     @Test
+     void kafkaListenerProcesses100MessagesInParallel() {
+          int messageCount = 100;
+
+          List<SendEmailRequest> events = IntStream.range(0, messageCount)
+                  .mapToObj(i -> new SendEmailRequest(
+                          UserOperation.CREATE,
+                          "user" + i + "@gmail.com"
+                  ))
+                  .toList();
+
+          long start = System.currentTimeMillis();
+
+          events.forEach(event -> kafkaTemplate.send(TOPIC_NAME, event));
+
+          await().atMost(20, TimeUnit.SECONDS)
+                  .untilAsserted(() -> verify(emailService, times(messageCount)).sendEmail(any()));
+
+          long duration = System.currentTimeMillis() - start;
+
+          System.out.println("Обработка 100 сообщений заняла: " + duration + " ms");
+
+          assertThat(duration).isLessThan(5000);
      }
 }
 

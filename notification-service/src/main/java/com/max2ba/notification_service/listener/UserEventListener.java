@@ -17,7 +17,8 @@ public class UserEventListener {
 
      @KafkaListener(
              topics = "${app.kafka.topic}",
-             groupId = "${app.kafka.group-id}"
+             groupId = "${app.kafka.group-id}",
+             concurrency = "3"
      )
      public void handle(SendEmailRequest request) {
           try {

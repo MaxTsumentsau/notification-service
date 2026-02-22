@@ -61,7 +61,7 @@ class NotificationControllerTest {
           verify(emailService).sendEmail(request);
           assertThat(response.code()).isEqualTo(ResponseCode.SUCCESS);
           assertThat(response.message()).isEqualTo(ResponseCode.SUCCESS.message());
-          assertThat(response.details()).isEqualTo("bambaleila@gmail.com");
+          assertThat(response.details()).isEqualTo("CREATE: bambaleila@gmail.com");
      }
 
      @Test
@@ -80,7 +80,7 @@ class NotificationControllerTest {
           verify(emailService).sendEmail(request);
           assertThat(response.code()).isEqualTo(ResponseCode.SUCCESS);
           assertThat(response.message()).isEqualTo(ResponseCode.SUCCESS.message());
-          assertThat(response.details()).isEqualTo("bambaleila@gmail.com");
+          assertThat(response.details()).isEqualTo("DELETE: bambaleila@gmail.com");
      }
 
 
