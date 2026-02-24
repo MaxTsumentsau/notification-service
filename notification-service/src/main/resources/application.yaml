@@ -1,4 +1,70 @@
+app:
+  from: ${MAIL_USERNAME}
+  kafka:
+    topic: user-events
+    group-id: notification-service
+
+resilience4j:
+  retry:
+    instances:
+      emailRetry:
+        maxAttempts: 5
+        waitDuration: 5m
+        retryExceptions:
+          - com.max2ba.notification_service.exception.EmailSendException
+        eventConsumerBufferSize: 100
+
+server:
+  port: 8081
+
 spring:
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+  config:
+    import: optional:application-secret.yml
+  aop:
+    proxy-target-class: true
   application:
     name: notification-service
+  kafka:
+    bootstrap-servers: localhost:19092,localhost:29092
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.max2ba.*"
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.max2ba.notification_service.dto.SendEmailRequest
+    listener:
+      type: single
+      ack-mode: record
+  mail:
+    host: ${MAIL_HOST}
+    port: 465
+    protocol: smtps
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true
+      mail.smtp.starttls.enable: false
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
+logging:
+  level:
+    liquibase: DEBUG
+    org.springframework.boot.autoconfigure.liquibase: DEBUG
+    org.springframework.jdbc: DEBUG
 

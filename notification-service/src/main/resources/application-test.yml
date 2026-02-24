@@ -1,0 +1,20 @@
+spring:
+  config:
+    import: optional:application-secret.yml
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+  from: ${MAIL_USERNAME}
+  mail:
+    host: localhost
+    port: 3025
+    protocol: smtp
+    username:
+    password:
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+      mail.smtp.ssl.enable: false
