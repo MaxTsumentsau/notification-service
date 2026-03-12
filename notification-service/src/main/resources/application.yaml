@@ -3,14 +3,14 @@ spring:
     name: notification-service
   config:
     import:
-      - application-secret.yml
-      - "optional:configserver:http://localhost:8888"
+      - "optional:application-secret.yml"
+      - "optional:configserver:http://config-server:8888"
 
   cloud:
     bus:
       enabled: true
     config:
-      uri: http://localhost:8888
+      uri: http://config-server:8888
       headers:
         X-Config-Token: ${CONFIG_TOKEN}
     stream:
@@ -21,7 +21,7 @@ spring:
         springCloudBusOutput:
           destination: springCloudBus
   rabbitmq:
-    host: localhost
+    host: rabbitmq
     port: 5672
     username: ${RABBIT_USER}
     password: ${RABBIT_PASSWORD}
