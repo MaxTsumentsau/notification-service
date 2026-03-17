@@ -1,0 +1,26 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                bat 'cd notification-service && .\\gradlew.bat clean build'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                bat 'docker build -t max2ba/notification-service:latest notification-service'
+            }
+        }
+
+        stage('Docker Restart') {
+            steps {
+                bat '''
+                cd /d D:\\JavaProjects\\config-server
+                docker compose up -d --build notification-service
+                '''
+            }
+        }
+    }
+}
